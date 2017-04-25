@@ -1,3 +1,4 @@
+import Debug.Trace
 import Control.Monad.State
 import Data.Maybe
 import qualified Data.Map as Map
@@ -14,6 +15,7 @@ data Type
     | TyFun Type Type
     | Union Type Type
     | TyVar TypeId
+    deriving (Show)
 
 data TyGen
     = Template Type
@@ -144,9 +146,33 @@ unifyError a b = do
     bstr <- showTy b
     error $ "type mismatch: " ++ astr ++ " and " ++ bstr
 
+occurs :: TypeId -> Type -> TyState Bool
+occurs tyid ty = do
+    ty <- prune ty
+    case ty of
+        Int -> return False
+        Str -> return False
+        TyTrue -> return False
+        Nil -> return False
+        (List a) -> occurs tyid a
+        (TyFun a a') -> do
+            occ <- occurs tyid a
+            occ' <- occurs tyid a'
+            return (occ || occ')
+        (Union a b) -> do
+            occa <- occurs tyid a
+            occb <- occurs tyid b
+            return (occa || occb)
+        (TyVar id_) -> return (tyid == id_)
+
 setTyVar :: TypeId -> Type -> TyState ()
-setTyVar tyid ty = modify $ \(TyEnv nextid tymap) ->
-    TyEnv nextid (Map.insert tyid ty tymap)
+setTyVar tyid ty = do
+    occ <- occurs tyid ty
+    if occ then
+        error "recursive type unification"
+    else
+        modify $ \(TyEnv nextid tymap) ->
+            TyEnv nextid (Map.insert tyid ty tymap)
 
 unify :: Type -> Type -> TyState ()
 unify a b = do
@@ -154,7 +180,6 @@ unify a b = do
     b <- prune b
 
     case (a, b) of
-        ((TyVar a), (TyVar b)) | a == b -> error "recursive type unification"
         ((TyVar a), b) -> setTyVar a b
         (a, (TyVar b)) -> setTyVar b a
         (Int, Int) -> return ()
@@ -354,10 +379,12 @@ globals = Map.fromList [
 
 main :: IO ()
 main =
-    let lit ty = Lit ty
-        apply fn args = foldl Apply fn args
-        ast = apply (Var "map") [lit (List Int)]
-    in print $ runTy $ do
+    let apply fn args = foldl Apply fn args
+        ast = (Seq (Let "x" (Lit (Union Str Int)))
+                   (If (InstanceOf (Var "x") (Instance Str))
+                        (Apply (Var "print") (Var "x"))
+                        (Lit Nil)))
+    in putStrLn $ runTy $ do
         comp <- eval globals ast
         cty <- compType comp
         case cty of
