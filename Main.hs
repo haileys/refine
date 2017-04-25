@@ -42,6 +42,7 @@ typeEq a b = do
             eqs <- mapM (elemByM typeEq bs) as
             return $ all id eqs
         ((TyVar a), (TyVar b)) -> return (a == b)
+        _ -> return False
 
 elemByM :: Monad m => (a -> a -> m Bool) -> [a] -> a -> m Bool
 elemByM _ [] _ = return False
