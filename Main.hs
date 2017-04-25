@@ -354,7 +354,7 @@ eval bindings (InstanceOf (Var id_) tygen) = do
     varType <- lookupVar bindings id_
     let varTypes = possibleTypes varType
     ty <- constructType tygen
-    (ofTy, other) <- filterType ty (typeEq ty)
+    (ofTy, other) <- filterType varType (typeEq ty)
 
     return $ fromJust $ joinMaybeComps
         (fmap (\t -> (Result (Map.insert id_ (Instance t) bindings) TyTrue)) ofTy)
