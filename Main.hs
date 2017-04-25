@@ -387,10 +387,11 @@ globals = Map.fromList [
 main :: IO ()
 main =
     let apply fn args = foldl Apply fn args
-        ast = (Seq (Let "x" (Lit (Union Str Int)))
-                   (If (InstanceOf (Var "x") (Instance Str))
+        ast = (Seq  (Let "x" (Lit (Union Str Int)))
+              (Seq  (Let "y" (Var "x"))
+                    (If (InstanceOf (Var "x") (Instance Str))
                         (Apply (Var "print") (Var "x"))
-                        (Lit Nil)))
+                        (Var "x"))))
     in putStrLn $ runTy $ do
         comp <- eval globals ast
         cty <- compType comp
