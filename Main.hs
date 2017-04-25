@@ -316,8 +316,8 @@ eval bindings (Apply fun arg) =
 
 eval bindings (Let id_ expr) =
     seqEval bindings expr $ \bindings exprType ->
-        let bindings = Map.insert id_ (Instance exprType) bindings
-        in return (Result bindings exprType)
+        let bindings' = Map.insert id_ (Instance exprType) bindings
+        in return (Result bindings' exprType)
 
 eval bindings (If cond then_ else_) = do
     condComp <- eval bindings cond
