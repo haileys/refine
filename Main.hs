@@ -21,6 +21,7 @@ data TyGen
     = Template Type
     | Instance Type
     | TyGen TypeId TyGen
+    deriving (Show)
 
 typeEq :: Type -> Type -> TyState Bool
 typeEq a b = do
@@ -239,6 +240,11 @@ data Computation
     = Result Bindings Type
     | CompReturn Bindings Type
     | Divergent Computation Computation
+
+instance Show Computation where
+    show (Result _ ty) = "Result(" ++ show ty ++ ")"
+    show (CompReturn _ ty) = "CompReturn(" ++ show ty ++ ")"
+    show (Divergent a b) = "Divergent(" ++ show a ++ ", " ++ show b ++ ")"
 
 mapEval :: (Bindings -> Type -> TyState Computation) -> Computation -> TyState Computation
 mapEval f (Result bind ty) = f bind ty
